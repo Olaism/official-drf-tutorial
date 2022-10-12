@@ -1,48 +1,46 @@
-from django.https import HttpResponse, JsonResponse
-from django.contrib.auth.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
 
 from .models import Snippet
 from .serializers import SnippetSerializer
 
-@csrf_exempt
-def snippet_list(request):
+@api_view(['GET', 'POST'])
+def snippet_list(request, format=None):
     
     if request.method == 'GET':
         snippets = Snippet.objects.all()
         serializer = SnippetSerializer(snippets, many=True)
-        return JsonResponse(snippets.data, safe=False)
+        return Response(serializer.data)
         
-    else if request.method == 'POST':
-        data = JSONParser().parse(request)
-        serializer = SnippetSerializer(data=data)
+    elif request.method == 'POST':
+        serializer = SnippetSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=404)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return JsonResponse(serializer.errors, status=HTTP_400_BAD_REQUEST)
         
         
         
-@csrf_exempt
-def snippet_detail(request, pk):
+@api_view(['GET', 'PUT', 'DELETE'])
+def snippet_detail(request, pk, format=None):
     try:
         snippet = Snippet.objects.get(pk=pk)
     except:
-        HttpResponse(status=404)
+        Response(status=ststus.HTTP_404_NOT_FOUND)
         
     if request.method == 'GET':
         serializer = SnippetSerializer(snippet)
-        return JsonResponse(serializer.data)
-    else if request.method == 'PUT':
-        data = JSONParser.parse(request)
-        serializer = SnippetSerializer(snippet, data=data)
+        return Response(serializer.data)
+    elif request.method == 'PUT':
+        serializer = SnippetSerializer(snippet, data=request.data)
         if serializer.is_valid():
             serializer.save() 
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, status=400)
-    else if request.method == 'DELETE':
+            return Response(serializer.data)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+    elif request.method == 'DELETE':
         snippet.delete()
-        return HttpResponse(status=204)
+        return Response(status=status.HTTP_204_NO_CONTENT)
         
         
         
